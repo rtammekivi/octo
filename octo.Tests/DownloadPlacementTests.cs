@@ -646,15 +646,16 @@ internal static class AudioFixtures
         return bytes;
     }
 
-    /// <summary>A FLAC with a STREAMINFO block describing two seconds of 16-bit stereo and no frames.</summary>
-    public static byte[] Flac()
+    /// <summary>A FLAC with a STREAMINFO block describing <paramref name="seconds"/> of 16-bit stereo and no frames.</summary>
+    public static byte[] Flac(int seconds = 2)
     {
         using var stream = new MemoryStream();
         stream.Write("fLaC"u8);
         stream.Write([0x80, 0x00, 0x00, 0x22]);
         stream.Write([0x10, 0x00, 0x10, 0x00]);
         stream.Write([0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
-        const ulong sampleRate = 44100, channelsMinusOne = 1, bitsMinusOne = 15, totalSamples = 88200;
+        const ulong sampleRate = 44100, channelsMinusOne = 1, bitsMinusOne = 15;
+        var totalSamples = sampleRate * (ulong)seconds;
         var packed = (sampleRate << 44) | (channelsMinusOne << 41) | (bitsMinusOne << 36) | totalSamples;
         for (var shift = 56; shift >= 0; shift -= 8) stream.WriteByte((byte)(packed >> shift));
         stream.Write(new byte[16]);

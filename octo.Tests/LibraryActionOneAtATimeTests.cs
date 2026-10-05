@@ -350,6 +350,26 @@ public sealed class LibraryActionOneAtATimeTests : IDisposable
         Assert.False(File.Exists(_original));
     }
 
+    private string LosslessStaged(int seconds) =>
+        Staged([.. AudioFixtures.Flac(seconds), .. new byte[_originalSize + 4096]], ".flac");
+
+    [Fact]
+    public async Task BetterQuality_RefusesACopyOfAnotherLength()
+    {
+        var action = Executor(sources: BothSources()).ApplyAsync(BetterQuality());
+
+        var soulseek = await NextDownload();
+        var rejected = await Assert.ThrowsAsync<ReplacementRejectedException>(() => Reveal(soulseek, LosslessStaged(176)));
+        Assert.Equal("is 176 s long, not 330 s like the original", rejected.Problem);
+        Fail(soulseek, rejected);
+
+        var lidarr = await NextDownload();
+        Finish(lidarr, await Reveal(lidarr, LosslessStaged(332)));
+
+        Assert.Equal(LibraryActionState.Applied, (await action.WaitAsync(TimeSpan.FromSeconds(10))).State);
+        Assert.False(File.Exists(_original));
+    }
+
     [Fact]
     public async Task BetterQuality_DuringASoulseekOutage_GoesStraightToLidarr()
     {

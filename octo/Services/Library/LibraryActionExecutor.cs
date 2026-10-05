@@ -515,9 +515,15 @@ public sealed class LibraryActionExecutor
         if (!lossless.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase))
             return "is not lossless";
         if (info.Length <= original.SizeBytes) return "is no larger than the original";
+        if (original.DurationSeconds is int want and > 0
+            && TagWriterExtras.ReadIdentity(path).Seconds is var got and > 0
+            && Math.Abs(got - want) > ReplacementLengthToleranceSeconds)
+            return $"is {got} s long, not {want} s like the original";
 
         return null;
     }
+
+    internal const int ReplacementLengthToleranceSeconds = 7;
 
     /// <summary>
     /// Better quality means genuinely lossless: a FLAC made from an MP3 is no upgrade over the MP3
